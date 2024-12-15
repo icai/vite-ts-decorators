@@ -1,6 +1,6 @@
 import { Plugin } from 'vite';
 import { join, dirname } from 'path';
-import { glob } from 'tinyglobby';  // Import tinyglobby
+import { globSync } from 'tinyglobby';  // Import tinyglobby
 import {
   ParsedCommandLine,
   transpileModule,
@@ -36,7 +36,7 @@ export function viteDecorators(options: ViteDecoratorsOptions = {}): Plugin {
 
   let parsedTsConfig = null;
   // Use tinyglobby to match files based on the srcDir glob pattern
-  const matchedFiles = await glob(srcDir, { cwd });
+  const matchedFiles = globSync(srcDir, { cwd });
 
   return {
     name: 'vite-ts-decorators',
