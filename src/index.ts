@@ -35,14 +35,13 @@ export function viteDecorators(options: ViteDecoratorsOptions = {}): Plugin {
   const srcDir = options.srcDir || 'src/**/*.ts?(x)';  // Default glob pattern
 
   let parsedTsConfig = null;
+  // Use tinyglobby to match files based on the srcDir glob pattern
+  const matchedFiles = await glob(srcDir, { cwd });
 
   return {
     name: 'vite-ts-decorators',
     enforce: 'pre', // Ensure this plugin runs before Vite's default handling of TypeScript files.
     async transform(src, id) {
-      // Use tinyglobby to match files based on the srcDir glob pattern
-      const matchedFiles = await glob(srcDir, { cwd });
-
       // Only process .ts and .tsx files that match the glob pattern
       if (!/\.tsx?$/.test(id) || !matchedFiles.includes(id)) {
         return null;
