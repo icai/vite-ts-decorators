@@ -1,5 +1,5 @@
 import { Plugin } from 'vite';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { globSync } from 'tinyglobby';  // Import tinyglobby
 import {
   ParsedCommandLine,
@@ -36,14 +36,15 @@ export function viteDecorators(options: ViteDecoratorsOptions = {}): Plugin {
 
   let parsedTsConfig = null;
   // Use tinyglobby to match files based on the srcDir glob pattern
-  const matchedFiles = globSync(srcDir, { cwd });
+  const matchedFiles = globSync(srcDir, { cwd }).map((file) => resolve(cwd, file));
 
   return {
     name: 'vite-ts-decorators',
     enforce: 'pre', // Ensure this plugin runs before Vite's default handling of TypeScript files.
     async transform(src, id) {
+      const normalizedId = resolve(id);
       // Only process .ts and .tsx files that match the glob pattern
-      if (!/\.tsx?$/.test(id) || !matchedFiles.includes(id)) {
+      if (!/\.tsx?$/.test(id) || !matchedFiles.includes(normalizedId)) {
         return null;
       }
 
