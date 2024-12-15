@@ -1,0 +1,36 @@
+{
+  "name": "vite-ts-decorators",
+  "version": "1.0.0",
+  "description": "A Vite plugin for transforming TypeScript code with decorators",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "author": "Terry Cai",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/icai/vite-ts-decorators.git"
+  },
+  "bugs": {
+    "url": "https://github.com/icai/vite-ts-decorators/issues"
+  },
+  "exports": {
+    "types": "./dist/index.d.ts",
+    "default": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "vite build && tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "reflect-metadata": "^0.2.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "tinyglobby": "^0.2.10"
+  },
+  "peerDependencies": {
+    "vite": "^6.0.3"
+  }
+}
