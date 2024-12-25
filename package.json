@@ -1,6 +1,6 @@
 {
   "name": "vite-ts-decorators",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A Vite plugin for transforming TypeScript code with decorators",
   "type": "module",
   "main": "dist/index.js",
