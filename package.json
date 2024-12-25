@@ -4,6 +4,7 @@
   "description": "A Vite plugin for transforming TypeScript code with decorators",
   "type": "module",
   "main": "dist/index.js",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": "Terry Cai",
   "license": "MIT",
@@ -14,16 +15,40 @@
   "bugs": {
     "url": "https://github.com/icai/vite-ts-decorators/issues"
   },
+  "files": [
+    "dist",
+    "src"
+  ],
   "exports": {
-    "types": "./dist/index.d.ts",
-    "default": "./dist/index.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.js"
+    },
+    "./src*": {
+      "import": "./src*"
+    }
   },
   "scripts": {
-    "build": "vite build && tsc"
+    "build": "vite build && tsc",
+    "release": "release-it",
+    "prepublishOnly": "pnpm run build",
+    "npm:pub": "pnpm publish --access public"
+  },
+  "release-it": {
+    "git": {
+      "tagName": "v${version}",
+      "commitMessage": "chore(release): v${version}",
+      "requireCleanWorkingDir": true,
+      "requireUpstream": false
+    },
+    "npm": {
+      "publish": false
+    }
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "reflect-metadata": "^0.2.2",
+    "release-it": "^17.10.0",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   },
@@ -31,6 +56,7 @@
     "tinyglobby": "^0.2.10"
   },
   "peerDependencies": {
+    "reflect-metadata": "^0.2.2",
     "vite": "^6.0.3"
   }
 }
