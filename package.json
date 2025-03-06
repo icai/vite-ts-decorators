@@ -47,16 +47,17 @@
     }
   },
   "devDependencies": {
+    "@types/minimatch": "^5.1.2",
     "@types/node": "^22.10.2",
     "release-it": "^17.10.0",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   },
   "dependencies": {
-    "tinyglobby": "^0.2.10"
+    "minimatch": "^10.0.1"
   },
   "peerDependencies": {
     "reflect-metadata": "^0.2.2",
-    "vite": "^6.0.3"
+    "vite": "^6.2.0"
   }
 }

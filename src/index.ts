@@ -1,6 +1,5 @@
 import { Plugin } from 'vite';
-import { join, dirname, resolve } from 'path';
-import { globSync } from 'tinyglobby';  // Import tinyglobby
+import { join, dirname, resolve, relative } from 'path';
 import {
   ParsedCommandLine,
   transpileModule,
@@ -11,6 +10,7 @@ import {
 } from 'typescript';
 import { inspect } from 'util';
 import { strip } from './strip-it';
+import { minimatch } from 'minimatch';
 
 export interface ViteDecoratorsOptions {
   tsconfig?: string;
@@ -18,7 +18,6 @@ export interface ViteDecoratorsOptions {
   force?: boolean;
   srcDir?: string;  // Optional src directory path
 }
-
 
 const theFinder = new RegExp(
   /((?<![(\s]\s*['"])@\w[.[\]\w\d]*\s*(?![;])[((?=\s)])/
@@ -28,61 +27,80 @@ const findDecorators = (fileContent) => theFinder.test(strip(fileContent));
 
 export function viteDecorators(options: ViteDecoratorsOptions = {}): Plugin {
   const cwd = options.cwd || process.cwd();
-  const tsconfigPath =
-    options.tsconfig ||
-    join(cwd, './tsconfig.json');
+  const tsconfigPath = options.tsconfig || join(cwd, './tsconfig.json');
   const forceTsc = options.force ?? false;
-  const srcDir = options.srcDir || 'src/**/*.ts?(x)';  // Default glob pattern
+  const srcDir = options.srcDir || 'src/**/*.ts?(x)';
 
-  let parsedTsConfig = null;
-  // Use tinyglobby to match files based on the srcDir glob pattern
-  const matchedFiles = globSync(srcDir, { cwd }).map((file) => resolve(cwd, file));
+  let parsedTsConfig: ParsedCommandLine | null = null;
+  const processedFiles = new Set<string>();
+
+  function isFileMatchingSrcDir(filePath: string): boolean {
+    const relativePath = relative(cwd, filePath);
+    return minimatch(relativePath, srcDir);
+  }
 
   return {
     name: 'vite-ts-decorators',
-    enforce: 'pre', // Ensure this plugin runs before Vite's default handling of TypeScript files.
-    async transform(src, id) {
+    enforce: 'pre',
+
+    async transform(code: string, id: string) {
+      // 只处理 .ts 和 .tsx 文件
+      if (!/\.tsx?$/.test(id)) {
+        return null;
+      }
+
       const normalizedId = resolve(id);
-      // Only process .ts and .tsx files that match the glob pattern
-      if (!/\.tsx?$/.test(id) || !matchedFiles.includes(normalizedId)) {
+      if (!isFileMatchingSrcDir(normalizedId)) {
         return null;
       }
 
-      if (!parsedTsConfig) {
-        parsedTsConfig = parseTsConfig(tsconfigPath, cwd);
-        if (parsedTsConfig.options.sourceMap) {
-          parsedTsConfig.options.sourceMap = false;
-          parsedTsConfig.options.inlineSources = true;
-          parsedTsConfig.options.inlineSourceMap = true;
+      try {
+        // 初始化 TypeScript 配置
+        if (!parsedTsConfig) {
+          parsedTsConfig = parseTsConfig(tsconfigPath, cwd);
+          if (parsedTsConfig.options.sourceMap) {
+            parsedTsConfig.options.sourceMap = false;
+            parsedTsConfig.options.inlineSources = true;
+            parsedTsConfig.options.inlineSourceMap = true;
+          }
         }
-      }
 
-      // Skip transformation if decorator metadata isn't enabled
-      if (
-        !forceTsc &&
-        (!parsedTsConfig ||
-          !parsedTsConfig.options ||
-          !parsedTsConfig.options.emitDecoratorMetadata)
-      ) {
+        // 检查装饰器配置
+        if (!forceTsc && (!parsedTsConfig?.options?.emitDecoratorMetadata)) {
+          return null;
+        }
+
+        // 检查是否包含装饰器
+        const hasDecorator = findDecorators(code);
+        if (!hasDecorator) {
+          return null;
+        }
+
+        // 转换代码
+        const program = transpileModule(code, {
+          fileName: id,
+          compilerOptions: parsedTsConfig.options,
+        });
+
+        processedFiles.add(normalizedId);
+        console.debug(`[vite-ts-decorators] Processed file: ${normalizedId}`);
+
+        return {
+          code: program.outputText,
+          map: null,
+        };
+      } catch (error) {
+        console.error(`[vite-ts-decorators] Error processing ${normalizedId}:`, error);
         return null;
       }
-
-      const hasDecorator = findDecorators(src);
-      if (!hasDecorator) {
-        return null;
-      }
-
-      // Transpile the TypeScript code
-      const program = transpileModule(src, {
-        fileName: id,
-        compilerOptions: parsedTsConfig.options,
-      });
-
-      return {
-        code: program.outputText,
-        map: null, // Add source map if needed
-      };
     },
+
+    // 可选：添加模块变更监听
+    handleHotUpdate({ file }) {
+      if (processedFiles.has(file)) {
+        console.debug(`[vite-ts-decorators] File changed: ${file}`);
+      }
+    }
   };
 }
 

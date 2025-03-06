@@ -19,7 +19,7 @@ export default defineConfig({
         'util',
         'reflect-metadata',
         'vite',
-        'tinyglobby',
+        'minimatch',
         'typescript'
 
       ],
